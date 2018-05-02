@@ -12,4 +12,4 @@ description: App Connect Enterprise Server
 name: ace
 version: 1.0.0
 tillerVersion: ">=2.4.1"
-icon:  https://raw.githubusercontent.com/ot4i/ace-helm/master/ibm-ace-dev/appconnect_enterprise_logo.png?sanitize=true 
+icon:  https://raw.githubusercontent.com/ot4i/ace-helm/master/ibm-ace-dev/appconnect_enterprise_logo.svg?sanitize=true 
