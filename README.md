@@ -1,7 +1,7 @@
 <!-- Copyright IBM Corporation 2018. All Rights Resevred. -->
 # IBM APP CONNECT ENTERPRISE
 
-<img align="left" src="https://raw.githubusercontent.com/ot4i/ace-helm/master/ibm-ace-dev/appconnect_enterprise_logo.png?sanitize=true"/>
+<img align="left" src="https://raw.githubusercontent.com/ot4i/ace-helm/master/ibm-ace-dev/appconnect_enterprise_logo.svg?sanitize=true"/>
 
 IBM® App Connect Enterprise is a market-leading lightweight enterprise integration engine that offers a fast, simple way for systems and applications to communicate with each other. As a result, it can help you achieve business value, reduce IT complexity and save money. IBM App Connect Enterprise supports a range of integration choices, skills and interfaces to optimize the value of existing technology investments. 
 
