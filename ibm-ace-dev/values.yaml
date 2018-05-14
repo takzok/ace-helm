@@ -33,4 +33,4 @@ resources:
     # memory is specified in units of bytes
     memory: 512Mi
 # license must be set to "accept" in order to accept the terms of the IBM license
-license: "accept"
+license: "not accepted"
