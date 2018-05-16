@@ -7,30 +7,31 @@
 # Contributors:
 #  IBM Corporation - initial API and implementation
 ###############################################################################
-service:  
-  type: NodePort
-  webuiPort: 7600  
-  serverlistenerPort: 7800
-  replicas: 1
+# license must be set to "accept" in order to accept the terms of the IBM license
+license: "not accepted"
 image:
   # repository is the container repository to use, which defaults to IIB docker registry hub image
   repository: ibmcom/ace
   # tag is the tag to use for the container repository
   tag: 11.0.0.0
-  # pullSecret is the secret to use when pulling the image from a private registry
-  pullSecret: 
   # pullPolicy of IfNotPresent causes image pulling to be skipped if it already exists. Change to Always to force a pull.
   pullPolicy: IfNotPresent
+  # pullSecret is the secret to use when pulling the image from a private registry
+  pullSecret: 
+service:  
+  type: NodePort
+  webuiPort: 7600  
+  serverlistenerPort: 7800
 resources:
-  limits:
-    # cpu is specified in units of cores
-    cpu: 2
-    # memory is specified in units of bytes
-    memory: 2048Mi
   requests:
     # cpu is specified in units of cores
     cpu: 1
     # memory is specified in units of bytes
     memory: 512Mi
-# license must be set to "accept" in order to accept the terms of the IBM license
-license: "not accepted"
+  limits:
+    # cpu is specified in units of cores
+    cpu: 2
+    # memory is specified in units of bytes
+    memory: 2048Mi
+replicaCount: 1
+

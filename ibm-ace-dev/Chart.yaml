@@ -7,9 +7,12 @@
 # Contributors:
 #  IBM Corporation - initial API and implementation
 ###############################################################################
-apiVersion: v1
-description: App Connect Enterprise Server
-name: ace
+name: ibm-ace-dev
 version: 1.0.0
-tillerVersion: ">=2.4.1"
+description: App Connect Enterprise Server
+keywords:
+  - Limited
+  - amd64
+  - ICP
 icon:  https://raw.githubusercontent.com/ot4i/ace-helm/master/ibm-ace-dev/appconnect_enterprise_logo.svg?sanitize=true 
+tillerVersion: ">=2.4.1"

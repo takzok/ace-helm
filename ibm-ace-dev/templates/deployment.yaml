@@ -12,26 +12,29 @@ kind: Deployment
 metadata:
   name: {{ template "fullname" . }}
   labels:
-    heritage: "{{ .Release.Service }}"
-    release: "{{ .Release.Name }}"
-    chart: "{{ .Chart.Name }}-{{ .Chart.Version }}"
-    app: "{{ template "fullname" . }}"
+    app: {{ template "fullname" . }}
+    chart: {{ .Chart.Name }}
+    release: {{ .Release.Name }}
+    heritage: {{ .Release.Service }}
 spec:
-  replicas: {{ .Values.service.replicas }}
+  replicas: {{ .Values.replicaCount }}
   template:
     metadata:
-      name: {{ template "fullname" . }} 
+      name: {{ template "fullname" . }}
       labels:
-        app: {{ template "fullname" . }} 
+        app: {{ template "fullname" . }}
+        chart: {{ .Chart.Name }}-{{ .Chart.Version }}
+        release: {{ .Release.Name }}
+        heritage: {{ .Release.Service }}
     spec:
       {{- if .Values.image.pullSecret }}
       imagePullSecrets:
         - name: {{ .Values.image.pullSecret }}
       {{- end }}
       containers:
-      - name: {{ template "fullname" . }} 
+      - name: {{ template "fullname" . }}
         image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
-        imagePullPolicy: {{ .Values.image.pullPolicy }}        
+        imagePullPolicy: {{ .Values.image.pullPolicy }}
         ports:
         - containerPort: {{ .Values.service.serverlistenerPort }}
           name: serverlistener
@@ -39,8 +42,14 @@ spec:
           name: webui
         env:
         -
-         name : LICENSE
-         value : {{ .Values.license }}
+          name : LICENSE
+          value : {{ .Values.license }}
+        livenessProbe:
+          httpGet:
+            path: /
+            port: 7600
+          initialDelaySeconds: 15
+          timeoutSeconds: 15
         readinessProbe:
           httpGet:
             path: /
@@ -52,3 +61,4 @@ spec:
 {{ toYaml .Values.resources.limits | indent 14 }}
           requests:
 {{ toYaml .Values.resources.requests | indent 14 }}
+
