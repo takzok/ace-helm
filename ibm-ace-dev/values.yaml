@@ -7,8 +7,11 @@
 # Contributors:
 #  IBM Corporation - initial API and implementation
 ###############################################################################
+arch: amd64
+
 # license must be set to "accept" in order to accept the terms of the IBM license
 license: "not accepted"
+
 image:
   # repository is the container repository to use, which defaults to IIB docker registry hub image
   repository: ibmcom/ace

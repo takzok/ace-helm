@@ -2,11 +2,17 @@
 
 ![ACE Logo](https://raw.githubusercontent.com/ot4i/ace-helm/master/ibm-ace-dev/appconnect_enterprise_logo.svg?sanitize=true)
 
+## Introduction
+
 IBM® App Connect Enterprise is a market-leading lightweight enterprise integration engine that offers a fast, simple way for systems and applications to communicate with each other. As a result, it can help you achieve business value, reduce IT complexity and save money. IBM App Connect Enterprise supports a range of integration choices, skills and interfaces to optimize the value of existing technology investments. 
 
-# Introduction
+## Chart Details
 
-This chart deploys a single IBM App Connect Enterprise for Developers integration server into an IBM Cloud Private or other Kubernetes environment.
+This chart deploys a single IBM App Connect Enterprise for Developers integration server into a Kubernetes environment.
+
+## Prerequisites
+
+* No prerequisites
 
 ## Installing the Chart
 
@@ -52,6 +58,21 @@ Alternatively, a YAML file that specifies the values for the parameters can be p
 
 > **Tip**: You can use the default [values.yaml](values.yaml)
 
+## Resources Required
+
+This chart uses the following resources by default:
+
+- 1 CPU core
+- 0.5 Gi memory
+
+See the [configuration](## Configuration) section for how to configure these values.
+
+## Limitations
+
+* This Chart can run only on amd64 architecture type.
+
+## Useful Links
+
 [View the IBM App Connect Enterprise Dockerfile repository on Github](https://github.com/ot4i/ace-docker)
 
 [View the Official IBM App Connect Enterprise for Developers Docker Image in Docker Hub](https://hub.docker.com/r/ibmcom/ace/)
@@ -64,4 +85,4 @@ Alternatively, a YAML file that specifies the values for the parameters can be p
 
 _Copyright IBM Corporation 2018. All Rights Reserved._
 
-_The IBM App Connect Enterprise logo is copyright IBM and is provided for use for the purposes of IBM Cloud Private. You will not use the IBM App Connect Enterprise logo in any way that would diminish the IBM or IBM App Connect Enterprise image. IBM reserves the right to end your privilege to use the logo at any time in the future at our sole discretion. Any use of the IBM Integration Bus logo affirms that you agree to adhere to these conditions._
+_The IBM App Connect Enterprise logo is copyright IBM. You will not use the IBM App Connect Enterprise logo in any way that would diminish the IBM or IBM App Connect Enterprise image. IBM reserves the right to end your privilege to use the logo at any time in the future at our sole discretion. Any use of the IBM Integration Bus logo affirms that you agree to adhere to these conditions._
