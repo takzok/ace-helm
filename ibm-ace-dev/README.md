@@ -12,7 +12,7 @@ This chart deploys a single IBM App Connect Enterprise for Developers integratio
 
 ## Prerequisites
 
-* No prerequisites
+No prerequisites
 
 ## Installing the Chart
 
@@ -69,7 +69,7 @@ See the [configuration](## Configuration) section for how to configure these val
 
 ## Limitations
 
-* This Chart can run only on amd64 architecture type.
+This Chart can run only on amd64 architecture type.
 
 ## Useful Links
 
