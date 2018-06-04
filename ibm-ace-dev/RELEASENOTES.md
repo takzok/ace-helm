@@ -9,5 +9,5 @@ features are available:
 
 | Chart | Date        | ICP Required | Image(s) Supported | Details |
 | ----- | ----------- | ------------ | ------------------ | ------- |
-| 1.0.0 | May 22, 2018| >=2.1.0.3    | ibmcom/ace:11.0.0.0| Initial Chart |
+| 1.0.0 | May 22, 2018| >=2.1.0.2    | ibmcom/ace:11.0.0.0| Initial Chart |
 

@@ -75,7 +75,7 @@ service:
       label: "web ui port"
       description: "This is the web ui port number"
       type: "number"
-      immutable: false
+      immutable: true
       required: true
   serverlistenerPort: 
     __metadata:
@@ -83,7 +83,7 @@ service:
       label: "http port"
       description: "This is the http server listener port number"
       type: "number"
-      immutable: false
+      immutable: true
       required: true
 
 ## Resource requests and limits configuration metadata
@@ -113,7 +113,7 @@ resources:
     memory: 
       __metadata: 
         label: "Memory limit"
-        description: "The memeory limit"
+        description: "The memory limit"
         type: "string"
         required: true   
 

@@ -1,6 +1,6 @@
 # IBM APP CONNECT ENTERPRISE
 
-![ACE Logo](https://raw.githubusercontent.com/ot4i/ace-helm/master/ibm-ace-dev/appconnect_enterprise_logo.svg?sanitize=true)
+![ACE Logo](https://raw.githubusercontent.com/ot4i/ace-helm/master/appconnect_enterprise_logo.svg?sanitize=true)
 
 ## Introduction
 
@@ -65,7 +65,7 @@ This chart uses the following resources by default:
 - 1 CPU core
 - 0.5 Gi memory
 
-See the [configuration](## Configuration) section for how to configure these values.
+See the [configuration](#configuration) section for how to configure these values.
 
 ## Limitations
 
