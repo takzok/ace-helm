@@ -24,12 +24,12 @@ metadata:
 spec:
   type: {{ .Values.service.type }}
   ports:
-  - port: {{ .Values.service.webuiPort }}
-    targetPort: {{ .Values.service.webuiPort }}
+  - port: 7600
+    targetPort: 7600
     protocol: TCP
     name: webui
-  - port: {{ .Values.service.serverlistenerPort }}
-    targetPort: {{ .Values.service.serverlistenerPort }}
+  - port: 7800
+    targetPort: 7800
     protocol: TCP
     name: serverlistener 
   selector:
