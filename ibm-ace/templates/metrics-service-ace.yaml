@@ -1,4 +1,4 @@
-# © Copyright IBM Corporation 2017, 2018
+# © Copyright IBM Corporation 2018
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -12,26 +12,28 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+{{- if .Values.metrics.enabled }}
+{{ $name := include "fullname" . }}
+{{ $serviceName := print $name "-a-m" }}
 apiVersion: v1
-kind: Pod
+kind: Service
 metadata:
-  name: "{{ .Release.Name }}-test"
-  labels:
-    heritage: {{ .Release.Service }}
-    release: {{ .Release.Name }}"
-    chart: {{ .Chart.Name }}-{{ .Chart.Version }}
-    app: {{ template "fullname" . }}-test
   annotations:
-    "helm.sh/hook": test-success
+    prometheus.io/scrape: 'true'
+    prometheus.io/port: '9483'
+  name: {{ $serviceName }}
+  labels:
+    app: {{ .Chart.Name }}
+    chart: {{ .Chart.Name }}
+    release: {{ .Release.Name }}
+    heritage: {{ .Release.Service }}
 spec:
-  containers:
-  - name: "{{ .Release.Name }}-test"
-    image: alpine:latest
-    env:
-      - name: ACE_HOST
-        value: {{ template "fullname" . }}
-      - name: TIMEOUT
-        value: "10"
-    command: ["sh"]
-    args: ["-xc", "nc -v -z -w $TIMEOUT $ACE_HOST 7600"]
-  restartPolicy: Never
+  type: ClusterIP
+  ports:
+  - targetPort: 9483
+    port: 9483
+    protocol: TCP
+  selector:
+    app: "{{ .Chart.Name }}"
+    release: "{{ .Release.Name }}"
+{{- end }}

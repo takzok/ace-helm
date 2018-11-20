@@ -1,4 +1,4 @@
-# © Copyright IBM Corporation 2017, 2018
+# © Copyright IBM Corporation 2018
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -12,25 +12,28 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+{{- if and .Values.queueManagerEnabled .Values.metrics.enabled }}
+{{ $name := include "fullname" . }}
+{{ $serviceName := print $name "-q-m" }}
 apiVersion: v1
 kind: Service
 metadata:
-  name: {{ template "fullname" . }}
+  annotations:
+    prometheus.io/scrape: 'true'
+    prometheus.io/port: '9157'
+  name: {{ $serviceName }}
   labels:
-    heritage: "{{ .Release.Service }}"
-    release: "{{ .Release.Name }}"
-    chart: "{{ .Chart.Name }}-{{ .Chart.Version }}"
-    app: "{{ template "fullname" . }}"
+    app: {{ .Chart.Name }}
+    chart: {{ .Chart.Name }}
+    release: {{ .Release.Name }}
+    heritage: {{ .Release.Service }}
 spec:
-  type: {{ .Values.service.type }}
+  type: ClusterIP
   ports:
-  - port: 7600
-    targetPort: 7600
+  - targetPort: 9157
+    port: 9157
     protocol: TCP
-    name: webui
-  - port: 7800
-    targetPort: 7800
-    protocol: TCP
-    name: serverlistener 
   selector:
-    app: {{ template "fullname" . }}
+    app: "{{ .Chart.Name }}"
+    release: "{{ .Release.Name }}"
+{{- end }}

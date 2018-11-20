@@ -1,0 +1,407 @@
+# © Copyright IBM Corporation 2018
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+# http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+# license must be set to "accept" in order to accept the terms of the IBM license
+license: "not accepted"
+
+# Whether the application is running production workloads
+productionDeployment: false
+
+# If using IBM App Connect Enterprise for Developers
+devEdition: true
+
+# Whether to start an image with an MQ Queue Manager.  The Queue Manager will be used by the Integration Server
+queueManagerEnabled: false
+
+image:
+  repository:
+    # name of the ace only server image
+    aceonly: ace-only
+    # name of the ace with mq server image
+    acemq: ace-mq
+  # tag is the tag to use for the container repository
+  tag: latest
+  # pullPolicy of IfNotPresent causes image pulling to be skipped if it already exists. Change to Always to force a pull.
+  pullPolicy: IfNotPresent
+  # pullSecret is the secret to use when pulling the image from a private registry
+  pullSecret:
+
+arch: amd64
+
+# gid for the secondary group the containers should run in so that they can access NFS storage.
+fsGroupGid:
+
+# persistence section specifies persistence settings which apply to the whole chart
+persistence:
+  # enabled is whether to use Persistent Volumes or not
+  enabled: true
+  # useDynamicProvisioning is whether or not to use Storage Classes to dynamically create Persistent Volumes
+  useDynamicProvisioning: true
+
+# dataPVC section specifies settings for the main Persistent Volume Claim, which is used for data in /var/mqm
+dataPVC:
+  # name sets part of the name for this Persistent Volume Claim
+  name: "data"
+  ## storageClassName is the name of the Storage Class to use, or an empty string for no Storage Class
+  storageClassName: ""
+  ## size is the minimum size of the Persistent Volume
+  size: 2Gi
+
+service:
+  type: NodePort
+  webuiPort: 7600
+  serverlistenerPort: 7800
+  serverlistenerTLSPort: 7843
+
+###########################################################
+# ibm-ace-server (ACE only) specific settings
+###########################################################
+aceonly:
+  # resource limits to apply to the ibm-ace-server containers
+  # ref: http://kubernetes.io/docs/user-guide/compute-resources/
+  resources:
+    requests:
+      cpu: "1"
+      memory: 1024Mi
+    limits:
+      cpu: "1"
+      memory: 1024Mi
+
+###########################################################
+# ibm-ace-mq-server (ACE w/ MQ) specific settings
+###########################################################
+acemq:
+  # resource limits to apply to the ibm-ace-mq-server containers
+  # ref: http://kubernetes.io/docs/user-guide/compute-resources/
+  resources:
+    requests:
+      cpu: "1"
+      memory: 2048Mi
+    limits:
+      cpu: "1"
+      memory: 2048Mi
+
+# The number of pod replicas to have - note that this is only used if the MQ queue manager is NOT enabled.
+replicaCount: 3
+
+# queueManager section specifies settings for the MQ Queue Manager
+queueManager:
+  # name allows you to specify the name to use for the queue manager.  Defaults to the Helm release name.
+  name:
+  # dev section specifies settings for the MQ developer defaults available in the MQ Advanced for Developers image.
+  dev:
+    # adminPassword sets the password of the admin user
+    adminPassword:
+    # appPassword sets the password of the app user
+    appPassword:
+  # The content of an mqsc file to be run by the queue manager on startup.
+  mqsc: |
+    DEFINE QL(ECHOIN)
+    DEFINE QL(ECHOOUT)
+    DEFINE QL(MULTIECHOIN)
+    DEFINE QL(MULTIECHOOUT)
+    DEFINE QL(MULTIIN)
+    DEFINE QL(MULTIOUT)
+
+    DEFINE CHANNEL(ACE.SVRCONN) CHLTYPE(SVRCONN) MCAUSER('aceuser')
+    ALTER QMGR CHLAUTH(DISABLED)
+
+# integrationServer section specifies settings for the ACE Integration Server
+integrationServer:
+  # name allows you to specify the name to use for the integration server.  Defaults to the Helm release name.
+  name:
+  keystore:
+    password: passrods
+    keys:
+      mykey:
+        passphrase: passrods
+        key: |
+          -----BEGIN ENCRYPTED PRIVATE KEY-----
+          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
+          i46A38SrjFgEJjKkL2aQ8vXsKQ==
+          -----END ENCRYPTED PRIVATE KEY-----
+        cert: |
+          -----BEGIN CERTIFICATE-----
+          MIIDrDCCApQCCQDNRiR1q5bTpTANBgkqhkiG9w0BAQsFADCBlTELMAkGA1UEBhMC
+          R0IxEjAQBgNVBAgMCUhhbXBzaGlyZTEQMA4GA1UEBwwHSHVyc2xleTEUMBIGA1UE
+          CgwLSUJNIFVLIEx0ZC4xEDAOBgNVBAsMB0FDRSBJQ1AxFTATBgNVBAMMDFRlc3Qg
+          Um9vdCBDQTEhMB8GCSqGSIb3DQEJARYSdGVzdGVyQGV4YW1wbGUuY29tMB4XDTE4
+          MTAzMDE2NTMxM1oXDTM4MTAzMDE2NTMxM1owgZkxCzAJBgNVBAYTAkdCMRIwEAYD
+          VQQIDAlIYW1wc2hpcmUxEDAOBgNVBAcMB0h1cnNsZXkxFDASBgNVBAoMC0lCTSBV
+          SyBMdGQuMQwwCgYDVQQLDANBQ0UxHTAbBgNVBAMMFG1hY2hpbmUxLmV4YW1wbGUu
+          Y29tMSEwHwYJKoZIhvcNAQkBFhJ0ZXN0ZXJAZXhhbXBsZS5jb20wggEiMA0GCSqG
+          SIb3DQEBAQUAA4IBDwAwggEKAoIBAQDiAcYbiWT11r5abrC/NVPNCXKfLAXZ118t
+          igpA32UsBAJCwtWeipudbPQphW/mesZR8Aw1l4TqbDg5au59WF9PaLAf//Jeu/I6
+          E9uE/8a+dOXZYHTNPs5E28Vnq89y/KdrB2+Woc71tadwOdsTYLBn4LbAVPK2/nhh
+          aoRWI//MIo+YhjDiftbiNh6t5B7JvxchQPKgCUDkHM3FXTsbFBZa8APYMnvPnCRs
+          shcCFQAhddE7Hj3E/DzNGo+J9B0/hrqSUY/InO3eHtv4m07F/XzHvZEcmr/z8Prw
+          90Npe80DRVU9NVQIl6z+ZfE56vv/l+bgkVhm3XtUEn6WtiYcbqCvAgMBAAEwDQYJ
+          KoZIhvcNAQELBQADggEBACPuF5la86PJ8+ffgcPhEJId72uEPCUL4PkcDV+8ipOU
+          Y8WwM/CSfmPVF19lDlQm863uWWkWVyzJhAyfNToQqtO3R+bpRqQKD0+3mwkRmCo/
+          csyfRC3LLVWg0XKEaf+nrt1//VOj4yuCRhThMo8JbThV8ROpDq1ePtgQqxMojKNW
+          XrTSxSkInhAv023Yhq4XchZwwznC4kQVfSNbabgZMkI94C/g+E/h5PjUFRFG8ac/
+          EFC/4DpkQUFmCASBpRx/nTYfV1lVQLIwP7Uyv6+PcjmoM2eGmgUTH2kNAZdi8uNB
+          ElKbk1bfIb9UXywxYXyCHQXmkqYJhPNN+qjTuDs1WDA=
+          -----END CERTIFICATE-----
+      extra-key:
+        passphrase: passrods
+        key: |
+          -----BEGIN ENCRYPTED PRIVATE KEY-----
+          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
+          7q0nN48QJmB5qZU4ewh1GxnBSA==
+          -----END ENCRYPTED PRIVATE KEY-----
+        cert: |
+          -----BEGIN CERTIFICATE-----
+          MIIDrzCCApcCCQC7U68DCojUcDANBgkqhkiG9w0BAQsFADCBlzELMAkGA1UEBhMC
+          R0IxEjAQBgNVBAgMCUhhbXBzaGlyZTEQMA4GA1UEBwwHSHVyc2xleTEUMBIGA1UE
+          CgwLSUJNIFVLIEx0ZC4xEDAOBgNVBAsMB0FDRSBJQ1AxFjAUBgNVBAMMDVRlc3Qg
+          Um9vdCBDQTIxIjAgBgkqhkiG9w0BCQEWE3Rlc3RlcjJAZXhhbXBsZS5jb20wHhcN
+          MTgxMDMwMTcwNzU4WhcNMzgxMDMwMTcwNzU4WjCBmjELMAkGA1UEBhMCR0IxEjAQ
+          BgNVBAgMCUhhbXBzaGlyZTEQMA4GA1UEBwwHSHVyc2xleTEUMBIGA1UECgwLSUJN
+          IFVLIEx0ZC4xDDAKBgNVBAsMA0FDRTEdMBsGA1UEAwwUbWFjaGluZTIuZXhhbXBs
+          ZS5jb20xIjAgBgkqhkiG9w0BCQEWE3Rlc3RlcjJAZXhhbXBsZS5jb20wggEiMA0G
+          CSqGSIb3DQEBAQUAA4IBDwAwggEKAoIBAQC6d4WygE2z2uWfbhNFDdp/pBzGmB6Z
+          KiqAdGvMsRriV8JQ4M2/2rskiWXhXe5jKRuedy1TZuyW9CZwmEg0TIIn2OA2JShP
+          xM+DIWqkg8ZyPNf3vxtchbTP2BCfy6TJoan4svTRDTKlFygtzuEjIFFH5etZKrnI
+          Olag1cv0+FiuwbU0Y/90BO3cce6KqHNNKe41nltljzg9RGeyg8iv8KVoM447a+yb
+          4uRLQWzPmFwS2mhTcEn54ScyfqvgL8s0wpRmjL5rAiwjngUNN5Cir8R21qGbDRq9
+          S2S02job3Ifr35gzxt+OpfIhcGaiN5f8c+a6pHzKbVzEXVR9xnH9BptjAgMBAAEw
+          DQYJKoZIhvcNAQELBQADggEBAMT90o79LMS0Zt0ccE8SfSewtX+EgZQoDNvfClzt
+          T6fMNtSLoWNVj6R6WG/t/BzaMXBpXu5JOKbAXVcfj3kyHgOLvt2Mfpe3gb+zKu6g
+          HERP7ecTc1+SwlzQVxQH0fOUGcfX/CjGHxrzJGc0iS91UJpsruFY1Hjy98PTqEG4
+          G1ANrZcUYs7RKIjKB5TUx70nJUkIfYjBVSRV/TrUhz+Fc0JkmJhljMa/i8X8LnEx
+          F5WmurPu96pEExtl4w9CSj/LnfIZ0IEqV39eHvMCf8m5TV3z91zlSvLLRnvajBvo
+          XHfhIivt5uNLqjL/cCA8shNXl3nctSSZcp1CfJABocKeF5I=
+          -----END CERTIFICATE-----
+  truststore:
+    password: passrods
+    certs:
+      cacert:
+        cert: |
+          -----BEGIN CERTIFICATE-----
+          MIIDqDCCApACCQC/RYKb+/vOrjANBgkqhkiG9w0BAQsFADCBlTELMAkGA1UEBhMC
+          R0IxEjAQBgNVBAgMCUhhbXBzaGlyZTEQMA4GA1UEBwwHSHVyc2xleTEUMBIGA1UE
+          CgwLSUJNIFVLIEx0ZC4xEDAOBgNVBAsMB0FDRSBJQ1AxFTATBgNVBAMMDFRlc3Qg
+          Um9vdCBDQTEhMB8GCSqGSIb3DQEJARYSdGVzdGVyQGV4YW1wbGUuY29tMB4XDTE4
+          MTAzMDE2NTE0NloXDTM4MTAzMDE2NTE0NlowgZUxCzAJBgNVBAYTAkdCMRIwEAYD
+          VQQIDAlIYW1wc2hpcmUxEDAOBgNVBAcMB0h1cnNsZXkxFDASBgNVBAoMC0lCTSBV
+          SyBMdGQuMRAwDgYDVQQLDAdBQ0UgSUNQMRUwEwYDVQQDDAxUZXN0IFJvb3QgQ0Ex
+          ITAfBgkqhkiG9w0BCQEWEnRlc3RlckBleGFtcGxlLmNvbTCCASIwDQYJKoZIhvcN
+          AQEBBQADggEPADCCAQoCggEBAPbdh9B8KJVou0IisgISqDVFjlAQmpsdcKQi9P1s
+          9DzGIuDghEwb21v/JW25U4+xJ4CULjVx+moHXLapP4tNpBTE2x8p4qEuOJROA3xr
+          m99nW6UnOEnM4stjdlt14ihKxiiu1DvGluBsnz3P9BSNmLCLhxcSgPpRUUqstiiK
+          hca1HxZQUF5EdijhzXA/R/afVNM/TftDBDuIw61rNlxIp/33STPZ0nUWY0lubQ8J
+          sLpDX73jKx5itpJ2gi99uR1KLrOwTWYEr/mGXFqyZjHkHEiE5+nIPd0q9+1f4Vh4
+          H2fTLrpAJkrIAZ6sRNrIaxlEtAHqJkMm36PHzO7JY4/lyaMCAwEAATANBgkqhkiG
+          9w0BAQsFAAOCAQEAX/0szi4ObvIUAuZwu2Lb7H0rNZZ8r0HsJ4NuaQ11VpeyBsx/
+          MSW2JepdA34xM7dfvc9ef7hoC8xHGt/PKUu+pNoum/XuLTnWoulch8rg0IqqPX6S
+          /xjbi6laAhr0xn3uepp8NBLbzjHRdvAmmhkgUphKrPSGOG0ThrRJQGjk3dW6KEQl
+          NPT1kA5GaM1/4oxslO6VYACnj+CUwb6RsksEsKjh9CM0UbSr1gvzzqC/xmNIJTpU
+          T9ADO5QBrAjpmGvnTNkM+iBLUDsKLkREmn+1epdkKx8lnOq7AvPlJpVvwAQU94Dh
+          +zyKzULDHnExNSikkAKtJHYY7MIaP0/Lyuf2+Q==
+          -----END CERTIFICATE-----
+      extra-cert:
+        cert: |
+          -----BEGIN CERTIFICATE-----
+          MIIDrDCCApQCCQCNcazfuU39uTANBgkqhkiG9w0BAQsFADCBlzELMAkGA1UEBhMC
+          R0IxEjAQBgNVBAgMCUhhbXBzaGlyZTEQMA4GA1UEBwwHSHVyc2xleTEUMBIGA1UE
+          CgwLSUJNIFVLIEx0ZC4xEDAOBgNVBAsMB0FDRSBJQ1AxFjAUBgNVBAMMDVRlc3Qg
+          Um9vdCBDQTIxIjAgBgkqhkiG9w0BCQEWE3Rlc3RlcjJAZXhhbXBsZS5jb20wHhcN
+          MTgxMDMwMTcwNzEzWhcNMzgxMDMwMTcwNzEzWjCBlzELMAkGA1UEBhMCR0IxEjAQ
+          BgNVBAgMCUhhbXBzaGlyZTEQMA4GA1UEBwwHSHVyc2xleTEUMBIGA1UECgwLSUJN
+          IFVLIEx0ZC4xEDAOBgNVBAsMB0FDRSBJQ1AxFjAUBgNVBAMMDVRlc3QgUm9vdCBD
+          QTIxIjAgBgkqhkiG9w0BCQEWE3Rlc3RlcjJAZXhhbXBsZS5jb20wggEiMA0GCSqG
+          SIb3DQEBAQUAA4IBDwAwggEKAoIBAQDVUJRklaHFtUTFsfoUa7PoQolOzgKqtP0J
+          Mg1x9RUWUjVGClz0b19ak4Uk7+U6tczUWfy5MZw9hJp3mI96yJXsvwAkaSlVlCIk
+          Auz7VvrkHwj9o+4+C8IuFItU/W5ARtj9VLng/cEP6i7S7PbJ33AUL19PgCrK1Zpt
+          rSioTdZdy5yd2MZPGdaT6R9b+We9F7yF6VK0zB4U5fJOeiNpVPOfa8BIEOzYI2WG
+          /i7iEMjK92d2Ktb/9ZFyVYMs7TCNWavRAjATz6CFCkBxSa/Ly2JMskD4AFVUuYBI
+          GDY6q1OhOaHwsVO/nA8pDmTYZrdPjSjzMBbMHhSegOiJewm6whEbAgMBAAEwDQYJ
+          KoZIhvcNAQELBQADggEBAH4l6dQgMW/mu7YwwVy4ZCgY9VpJ8cSePxV5kS+L6oz6
+          vhkKD9TEQ/X7fXSnL0BbgCG/YhzLg+7No0dRHMmEh4typSZjc5KrcV5ExHzWDd0B
+          V/zGetFTuqtE43I93isPP0b8nPhfcrQcfVIRLN1EvT8engI68pq2PoOz7HPo+YT7
+          wp+0vTaUw6q7I5+ZXjEnykoytO7gExXnY/z4al2ey6VVyrGiFjz62Q+tQFNshmgR
+          F6Y50d+SvM3+RPe/oA8GqJWAhcn6oU7Jn3+snmCMGYH0nylSo8fvz86bbxqGMVJR
+          zIOCUiypnnyNsutqqUVVHb0E10TDBkSHD4VQCZ7TUKA=
+          -----END CERTIFICATE-----
+  policy: |
+    <?xml version="1.0" encoding="UTF-8"?>
+    <policies>
+      <policy policyType="HTTPSConnector" policyName="HTTPS" policyTemplate="HTTPS Connector Template">
+        <ListenerPort>7843</ListenerPort>
+        <ListenerAddress>0.0.0.0</ListenerAddress>
+        <ListenerThreads>-1</ListenerThreads>
+        <MaxKeepAliveRequests>100</MaxKeepAliveRequests>
+        <TimeoutSweepInterval>200</TimeoutSweepInterval>
+        <QueueCapacity>1000</QueueCapacity>
+        <ConnBacklog>100</ConnBacklog>
+        <CORSEnabled>false</CORSEnabled>
+        <CORSAllowOrigins>*</CORSAllowOrigins>
+        <CORSAllowCredentials>false</CORSAllowCredentials>
+        <CORSExposeHeaders>Content-Type</CORSExposeHeaders>
+        <CORSMaxAge>-1</CORSMaxAge>
+        <CORSAllowMethods>GET,HEAD,POST,PUT,PATCH,DELETE,OPTIONS</CORSAllowMethods>
+        <CORSAllowHeaders>Accept,Accept-Language,Content-Language,Content-Type</CORSAllowHeaders>
+        <CipherSpec>!RC4+RSA:HIGH:+MEDIUM:+LOW</CipherSpec>
+        <ReqClientAuth>false</ReqClientAuth>
+        <TLSContextTimeout>300</TLSContextTimeout>
+        <TLSCertVerifyDepth>100</TLSCertVerifyDepth>
+        <KeyAlias>mykey</KeyAlias>
+        <KeyPassword></KeyPassword>
+        <KeystoreFile>/home/aceuser/ace-server/keystore.jks</KeystoreFile>
+        <KeystorePassword>passrods</KeystorePassword>
+        <TruststoreFile>/home/aceuser/ace-server/truststore.jks</TruststoreFile>
+        <TruststorePassword>passrods</TruststorePassword>
+      </policy>
+    </policies>
+  policyDescriptor: |
+    <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+    <ns2:policyProjectDescriptor xmlns="http://com.ibm.etools.mft.descriptor.base" xmlns:ns2="http://com.ibm.etools.mft.descriptor.policyProject">
+      <references/>
+    </ns2:policyProjectDescriptor>
+  odbcini: |
+    ;#######################################
+    ;#### List of data sources stanza ######
+    ;#######################################
+    [ODBC Data Sources]
+    ORACLEDB=DataDirect ODBC Oracle Wire Protocol
+    ;###########################################
+    ;###### Individual data source stanzas #####
+    ;###########################################
+    ;# Oracle stanza
+    [ORACLEDB]
+    Driver=/opt/ibm/ace-11/server/ODBC/drivers/lib/UKora95.so
+    Description=DataDirect ODBC Oracle Wire Protocol
+    HostName=OracleServerMachineName
+    PortNumber=1521
+    ServiceName=OracleServiceName
+    CatalogOptions=0
+    EnableStaticCursorsForLongData=0
+    ApplicationUsingThreads=1
+    EnableDescribeParam=1
+    OptimizePrepare=1
+    WorkArounds=536870912
+    ProcedureRetResults=1
+    ColumnSizeAsCharacter=1
+    LoginTimeout=0
+    EnableNcharSupport=0
+    ;# Uncomment the next setting if you wish to use Oracle TIMESTAMP WITH TIMEZONE columns
+    ;# EnableTimestampwithTimezone=1
+    ;##########################################
+    ;###### Mandatory information stanza ######
+    ;##########################################
+    [ODBC]
+    InstallDir=/opt/ibm/ace-11/server/ODBC/drivers
+    UseCursorLib=0
+    IANAAppCodePage=4
+    UNICODE=UTF-8
+  serverconf: |
+    ---
+    ResourceManagers:
+      JVM:
+        truststoreType: 'JKS'
+        truststoreFile: '/home/aceuser/ace-server/truststore.jks'
+        truststorePass: 'setdbparms::truststore'
+    # Defaults:
+    #   Policies:
+    #     HTTPSConnector: 'HTTPS'
+    Defaults:
+    defaultApplication: ''       # Name a default application under which independent resources will be placed
+    policyProject: 'DefaultPolicies'   # Name of the Policy project that will be used for unqualified Policy references
+    Policies:
+      # Set default policy names, optionally qualified with a policy project as {policy project}:name
+      HTTPSConnector: 'HTTPS'          # Default HTTPS connector policy
+  setdbparms: |
+    setdbparms::truststore dummy passrods
+  viewerusers: |
+    viewer1 passwd1
+    viewer2 passwd2
+  adminusers: |
+    admin1 passwd1
+    admin2 passwd2
+
+# log section specifies settings for MQ error logs and integration server console logs
+log:
+  format: json
+
+# metrics section specifies settings for generating queue manager and integration server metrics
+metrics:
+  enabled: true
+
+# livenessProbe section specifies setting for the ACE liveness probe, which checks for the Integration Server admin endpoint and a healthy Queue Manager
+livenessProbe:
+  # initialDelaySeconds should be raised if your system cannot start the Queue Manager and Integration Server in 120 seconds
+  initialDelaySeconds: 120
+  periodSeconds: 10
+  timeoutSeconds: 5
+  failureThreshold: 1
+
+# readinessProbe section specifies setting for the ACE readiness probe, which checks for the Integration Server admin endpoint and a running Queue Manager
+readinessProbe:
+  initialDelaySeconds: 10
+  periodSeconds: 5
+  timeoutSeconds: 3
+  failureThreshold: 1
