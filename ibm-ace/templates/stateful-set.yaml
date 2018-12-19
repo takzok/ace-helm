@@ -73,6 +73,7 @@ spec:
                 operator: In
                 values:
                 - {{ .Values.arch }}
+      serviceAccountName: {{ include "fullname" . }}
       {{- if .Values.image.pullSecret }}
       imagePullSecrets:
         - name: {{ .Values.image.pullSecret }}
@@ -107,12 +108,16 @@ spec:
               value: {{ .Values.queueManager.name | default .Release.Name | replace "-" "" | quote }}
             - name: ACE_SERVER_NAME
               value: {{ print $serverName | quote }}
+            - name: SERVICE_NAME
+              value: {{ include "fullname" . }}
             - name: LOG_FORMAT
               value: {{ .Values.log.format | default "json" | quote }}
             - name: MQ_ENABLE_METRICS
               value: {{ .Values.metrics.enabled | default true | quote }}
             - name: ACE_ENABLE_METRICS
               value: {{ .Values.metrics.enabled | default true | quote }}
+            - name: MQSI_OVERRIDE_HOSTNAME
+              value: {{ .Values.service.iP }}
             {{- if and .Values.integrationServer.keystore .Values.integrationServer.keystore.password }}
             - name: "ACE_KEYSTORE_PASSWORD"
               valueFrom:
@@ -182,21 +187,22 @@ spec:
             runAsNonRoot: false
             runAsUser: 0
             privileged: false
-            capabilities:
-              add:
-              - SETPCAP
-              - AUDIT_WRITE
-              - CHOWN
-              - NET_RAW
-              - DAC_OVERRIDE
-              - FOWNER
-              - FSETID
-              - KILL
-              - SETUID
-              - SETGID
-              - NET_BIND_SERVICE
-              - SYS_CHROOT
-              - SETFCAP
+            # Uncommenting the following lines will enforce the capabilites to be present before the pod will start if you would like tighter control of the system security
+            # capabilities:
+            #  add:
+            #  - SETPCAP
+            #  - AUDIT_WRITE
+            #  - CHOWN
+            #  - NET_RAW
+            #  - DAC_OVERRIDE
+            #  - FOWNER
+            #  - FSETID
+            #  - KILL
+            #  - SETUID
+            #  - SETGID
+            #  - NET_BIND_SERVICE
+            #  - SYS_CHROOT
+            #  - SETFCAP
           # Set liveness probe to determine if the Integration Server is running
           livenessProbe:
             exec:

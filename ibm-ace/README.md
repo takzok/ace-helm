@@ -36,7 +36,43 @@ To deploy a production IBM App Connect Enterprise integration server, [check the
   * runAsNonRoot: false
   * runAsUser: 0
   * privileged: false
+  
+* On RedHat OpenShift a [Security Context Constraint](https://blog.openshift.com/understanding-service-accounts-sccs/) should be used in place of a pod security policy. The recommended Security Context Constraint is shown below:
+```
+kind: SecurityContextConstraints
+apiVersion: v1
+metadata:
+  name: ibm-ace-scc
+allowPrivilegedContainer: true
+runAsUser:
+  type: RunAsAny
+seLinuxContext:
+  type: RunAsAny
+fsGroup:
+  type: RunAsAny
+supplementalGroups:
+  type: RunAsAny
+requiredDropCapabilities:
+- MKNOD
+allowedCapabilities:
+- SETPCAP
+- AUDIT_WRITE
+- CHOWN
+- NET_RAW
+- DAC_OVERRIDE
+- FOWNER
+- FSETID
+- KILL
+- SETUID
+- SETGID
+- NET_BIND_SERVICE
+- SYS_CHROOT
+- SETFCAP  
+forbiddenSysctls:
+- '*'    
+```
 * **Note**: If you are deploying to an IBM Cloud Private environment that does not support these security settings by default. Follow these [instructions](https://www.ibm.com/support/knowledgecenter/SSBS6K_3.1.0/app_center/nd_helm.html) to enable your deployment.
+
 * If you are using SELinux you must meet the [MQ requirements](https://www-01.ibm.com/support/docview.wss?uid=swg21714191)
 
 ## Resources Required
@@ -180,6 +216,7 @@ The following table lists the configurable parameters of the `ibm-ace` chart and
 | `service.webuiPort`              | Web UI port number - read only                  | `7600`                                                     |
 | `service.serverlistenerPort`     | Http server listener port number - read only    | `7800`                                                     |
 | `service.serverlistenerTLSPort`  | Https server listener port number - read only   | `7843`                                                     |
+| `service.iP`                     | This is a hostname/IP that the nodeport is connected to i.e. a workers IP    | `mycluster.icp`               |
 | `aceonly.resources.limits.cpu`        | Kubernetes CPU limit for the container      | `1`                                                       |
 | `aceonly.resources.limits.memory`     | Kubernetes memory limit for the container   | `1024Mi`                                                  |
 | `aceonly.resources.requests.cpu`      | Kubernetes CPU request for the container    | `1`                                                       |

@@ -35,7 +35,7 @@ image:
   # pullPolicy of IfNotPresent causes image pulling to be skipped if it already exists. Change to Always to force a pull.
   pullPolicy: IfNotPresent
   # pullSecret is the secret to use when pulling the image from a private registry
-  pullSecret:
+  pullSecret: 
 
 arch: amd64
 
@@ -63,6 +63,7 @@ service:
   webuiPort: 7600
   serverlistenerPort: 7800
   serverlistenerTLSPort: 7843
+  iP: mycluster.icp
 
 ###########################################################
 # ibm-ace-server (ACE only) specific settings
