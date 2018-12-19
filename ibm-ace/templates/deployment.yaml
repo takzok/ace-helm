@@ -69,6 +69,7 @@ spec:
                 operator: In
                 values:
                 - {{ .Values.arch }}
+      serviceAccountName: {{ include "fullname" . }}
       {{- if .Values.image.pullSecret }}
       imagePullSecrets:
         - name: {{ .Values.image.pullSecret }}
@@ -98,10 +99,14 @@ spec:
               value: "false"
             - name: ACE_SERVER_NAME
               value: {{ print $serverName | quote }}
+            - name: SERVICE_NAME
+              value: {{ include "fullname" . }}
             - name: LOG_FORMAT
               value: {{ .Values.log.format | default "json" | quote }}
             - name: ACE_ENABLE_METRICS
               value: {{ .Values.metrics.enabled | default true | quote }}
+            - name: MQSI_OVERRIDE_HOSTNAME
+              value: {{ .Values.service.iP }}
             {{- if and .Values.integrationServer.keystore .Values.integrationServer.keystore.password }}
             - name: "ACE_KEYSTORE_PASSWORD"
               valueFrom:
