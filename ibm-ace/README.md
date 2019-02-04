@@ -36,7 +36,7 @@ To deploy a production IBM App Connect Enterprise integration server, [check the
   * runAsNonRoot: false
   * runAsUser: 0
   * privileged: false
-  
+
 * On RedHat OpenShift a [Security Context Constraint](https://blog.openshift.com/understanding-service-accounts-sccs/) should be used in place of a pod security policy. The recommended Security Context Constraint is shown below:
 ```
 kind: SecurityContextConstraints
@@ -74,6 +74,70 @@ forbiddenSysctls:
 * **Note**: If you are deploying to an IBM Cloud Private environment that does not support these security settings by default. Follow these [instructions](https://www.ibm.com/support/knowledgecenter/SSBS6K_3.1.0/app_center/nd_helm.html) to enable your deployment.
 
 * If you are using SELinux you must meet the [MQ requirements](https://www-01.ibm.com/support/docview.wss?uid=swg21714191)
+
+To separate secrets from the Helm release a secret can be pre-installed with the following shape and referenced from the Helm chart with the `configurationSecret` value:
+```
+apiVersion: v1
+kind: Secret
+metadata:
+  name: <secretName>
+type: Opaque
+data:
+  adminPassword:
+  appPassword:
+  keystoreCert-<alias>:
+  keystoreKey-<alias>:
+  keystorePass-<alias>:
+  keystorePassword:
+  mqsc:
+  odbcini:
+  policy:
+  policyDescriptor:
+  serverconf:
+  setdbparms:
+  truststoreCert-<alias>:
+  truststorePassword:
+```
+
+The following table describes the secret keys:
+
+| Key                             | Description                                                        |
+| ------------------------------- | ------------------------------------------------------------------ |
+| `adminPassword`                 | MQ Developer defaults - administrator password                     |
+| `appPassword`                   | MQ Developer defaults - app password                               |
+| `keystorePass-{keyname}`        | The passphrase for the private key being imported, if there is one |
+| `keystoreKey-{keyname}`         | Multi-line value containing the private key in PEM format                                      |
+| `keystoreCert-{keyname}`        | Multi-line value containing the certificate in PEM format                                      |
+| `keystorePassword`              | A password to set for the Integration Server's keystore            |
+| `mqsc`                          | Multi-line value containing an mqsc file to run against the Queue Manager |
+| `odbcini`                       | Multi-line value containing an odbc.ini file for the Integration Server to define any ODBC data connections |
+| `policy`                        | Multi-line value containing a policy to apply                      |
+| `policyDescriptor`              | Multi-line value containing the policy descriptor file             |
+| `serverconf`                    | Multi-line value containing a server.conf.yaml                                               |
+| `setdbparms`                    | Multi-line value containing the `{ResourceName} {UserId} {Password}` to pass to [mqsisetdbparms command](https://www.ibm.com/support/knowledgecenter/en/SSTTDS_11.0.0/com.ibm.etools.mft.doc/an09155_.htm) |
+| `truststoreCert-{certname}`     | Multi-line value containing the trust certificate in PEM format    |
+| `truststorePassword`            | A password to set for the Integration Server's truststore          |
+
+A second secret may also be pre-installed with the following shape for a release with the name `{{ .RELEASE.NAME }}-ibm-ace`:
+```
+apiVersion: v1
+kind: Secret
+metadata:
+  name: {{ .RELEASE.NAME }}-ibm-ace
+type: Opaque
+data:
+  adminusers:
+  viewerusers:
+```
+
+The following table describes the secret keys:
+
+| Key                             | Description                                                        |
+| ------------------------------- | ------------------------------------------------------------------ |
+| `adminusers`                    | Multi-line value containing the `{UserName} {Password}` to pass to [mqsiwebuseradmin command](https://www.ibm.com/support/knowledgecenter/en/SSTTDS_11.0.0/com.ibm.etools.mft.doc/bn28490_.htm) to create viewer users with READ, WRITE, EXECUTE access to the server |
+| `viewerusers`                   | Multi-line value containing the `{UserName} {Password}` to pass to [mqsiwebuseradmin command](https://www.ibm.com/support/knowledgecenter/en/SSTTDS_11.0.0/com.ibm.etools.mft.doc/bn28490_.htm) to create admin users with READ access to the server |
+
+Further instructions and helper scripts are provided in the `scripts` directory.
 
 ## Resources Required
 
@@ -138,37 +202,28 @@ The [configuration](#configuration) section lists the parameters that can be con
 
 - **Tip**: See all the resources deployed by the chart using `kubectl get all -l release={release-name}`
 
-**Important**: Due to Helm secret management anyone with access to tiller can run a `helm get values` command and see secret information in plain text (https://github.com/helm/helm/issues/2196) - only administrators or cluster administrators should have access to tiller. The {{ RELEASE }}-ibm-ace secret is created as part of this chart. If you are concerned about access to this information please replace these after installation separate from the helm release then delete the {{ RELEASE }}-ibm-ace-XXXXX pods: (Please see the [configuration](#configuration) section for how to configure these values):
-- **mqsc**
-- **keystorePassword**
-- **keystoreKey-{{ $key }}**
-- **keystoreCert-{{ $key }}**
-- **keystorePass-{{ $key }}**
-- **truststorePassword**
-- **truststoreCert-{{ $key }}**
-- **odbcini**
-- **policy**
-- **policyDescriptor**
-- **serverconf**
-- **setdbparms**
-- **viewerusers**
-
-Alternatively, create the secret `{{ .RELEASE.NAME }}-ibm-ace` by modifying the secrets.yaml file appropriately and creating it by running `kubectl create -f secrets.yaml`, and then removing it from the chart so that it is separated from the release.
-
 ## Installing a sample image
 
-If you have built your own docker image following the [docker instructions in `ace-docker`](https://github.com/ot4i/ace-docker) and you want to test installing the [`sample` image](https://github.com/ot4i/ace-docker/sample), we have provided a file `samplevalues.yaml` that has all the values needed to run the sample image. All the values in the `initial-config` folders are set in the `integrationServer` key in this file.
+If you have built your own docker image following the [docker instructions in `ace-docker`](https://github.com/ot4i/ace-docker) and you want to test installing the [`sample` image](https://github.com/ot4i/ace-docker/sample), we have provided a file `samplevalues.yaml` that has all the values needed to run the sample image.
+
+First run the `generateSecrets.sh` script using the configuration files in scripts/sample-configuration-files to generate the required secrets separate from the Helm release:
+
+```
+cd scripts
+cp ./sample-configuration-files/* ./
+./generateSecrets.sh my-secret {{ .Release.Name }}
+```
 
 To install the chart using ACE only and the sample values:
 
 ```
-helm install --name ace-dev ibm-ace --set license=accept -f=samplevalues.yaml --set image.repository.aceonly={docker-repo/ace-image-name} --set image.tag={image-tag}
+helm install --name ace-dev ibm-ace --set license=accept -f=./ibm-ace/samplevalues.yaml --set image.repository.aceonly={docker-repo/ace-image-name} --set image.tag={image-tag}
 ```
 
 To install the chart using ACE & MQ and the sample values:
 
 ```
-helm install --name ace-mq-dev ibm-ace --set license=accept -f=samplevalues.yaml --set image.repository.acemq={docker-repo/ace-mq-image-name} --set image.tag={image-tag} --set queueManagerEnabled=true
+helm install --name ace-mq-dev ibm-ace --set license=accept -f=./ibm-ace/samplevalues.yaml --set image.repository.acemq={docker-repo/ace-mq-image-name} --set image.tag={image-tag} --set queueManagerEnabled=true
 ```
 
 
@@ -216,37 +271,24 @@ The following table lists the configurable parameters of the `ibm-ace` chart and
 | `service.webuiPort`              | Web UI port number - read only                  | `7600`                                                     |
 | `service.serverlistenerPort`     | Http server listener port number - read only    | `7800`                                                     |
 | `service.serverlistenerTLSPort`  | Https server listener port number - read only   | `7843`                                                     |
-| `service.iP`                     | This is a hostname/IP that the nodeport is connected to i.e. a workers IP    | `mycluster.icp`               |
+| `service.iP`                     | This is a hostname/IP that the nodeport is connected to i.e. a workers IP    | `nil`               |
 | `aceonly.resources.limits.cpu`        | Kubernetes CPU limit for the container      | `1`                                                       |
 | `aceonly.resources.limits.memory`     | Kubernetes memory limit for the container   | `1024Mi`                                                  |
 | `aceonly.resources.requests.cpu`      | Kubernetes CPU request for the container    | `1`                                                       |
 | `aceonly.resources.requests.memory`   | Kubernetes memory request for the container | `1024Mi`                                                  |
-| `acemq.resources.limits.cpu`      | Kubernetes CPU limit for the container      | `1`                                                       |
-| `acemq.resources.limits.memory`   | Kubernetes memory limit for the container   | `2048Mi`                                                  |
-| `acemq.resources.requests.cpu`    | Kubernetes CPU request for the container    | `1`                                                       |
-| `acemq.resources.requests.memory` | Kubernetes memory request for the container | `2048Mi`                                                  |
+| `acemq.resources.limits.cpu`      | Kubernetes CPU limit for the container      | `1`                                                           |
+| `acemq.resources.limits.memory`   | Kubernetes memory limit for the container   | `2048Mi`                                                      |
+| `acemq.resources.requests.cpu`    | Kubernetes CPU request for the container    | `1`                                                           |
+| `acemq.resources.requests.memory` | Kubernetes memory request for the container | `2048Mi`                                                      |
 | `replicaCount`                   | Set how many replicas to run | `3`               |
 | `queueManager.name`              | MQ Queue Manager name                           | Helm release name                                          |
-| `queueManager.dev.adminPassword` | Developer defaults - administrator password     | Random generated string.  See the notes that appear when you install for how to retrieve this. |
-| `queueManager.dev.appPassword`   | Developer defaults - app password               | `nil` (no password required to connect an MQ client)       |
-| `queueManager.mqsc`              | Multi-line value containing an mqsc file to run against the Queue Manager | `nil`                            |
 | `integrationServer.name`         | ACE Integration Server name                     | Helm release name                                          |
-| `integrationServer.keystore.password` | A password to set for the Integration Server's keystore | `nil`                                         |
-| `integrationServer.keystore.keys.{keyname}.passphrase` | The passphrase for the private key being imported, if there is one | `nil`             |
-| `integrationServer.keystore.keys.{keyname}.key` | Multi-line value containing the private key in PEM format | `nil`                             |
-| `integrationServer.keystore.keys.{keyname}.cert` | Multi-line value containing the certificate in PEM format | `nil`                            |
-| `integrationServer.truststore.password` | A password to set for the Integration Server's truststore | `nil`                                     |
-| `integrationServer.truststore.certs.{certname}.cert`| Multi-line value containing the trust certificate in PEM format | `nil`                   |
-| `integrationServer.odbcini`      | Multi-line value containing an odbc.ini file for the Integration Server to define any ODBC data connections | `nil` |
-| `integrationServer.policy`       | Multi-line value containing a policy to apply   | `nil`                                                      |
-| `integrationServer.policyDescriptor`| Multi-line value containing the policy descriptor file | `nil`                                            |
-| `integrationServer.serverconf`   | Multi-line value containing a server.conf.yaml  | `nil`                                                      |
-| `integrationServer.setdbparms`   | Multi-line value containing the `{ResourceName} {UserId} {Password}` to pass to [mqsisetdbparms command](https://www.ibm.com/support/knowledgecenter/en/SSTTDS_11.0.0/com.ibm.etools.mft.doc/an09155_.htm) | `nil`         |
-| `integrationServer.viewerusers`  | Multi-line value containing the `{UserName} {Password}` to pass to [mqsiwebuseradmin command](https://www.ibm.com/support/knowledgecenter/en/SSTTDS_11.0.0/com.ibm.etools.mft.doc/bn28490_.htm) to create viewer users with READ access to the server | `nil`         |
-| `integrationServer.adminusers`  | Multi-line value containing the `{UserName} {Password}` to pass to [mqsiwebuseradmin command](https://www.ibm.com/support/knowledgecenter/en/SSTTDS_11.0.0/com.ibm.etools.mft.doc/bn28490_.htm) to create admin users with READ, WRITE, EXECUTE access to the server | `nil`         |
+| `integrationServer.keystoreKeyNames`     | Comma separated list of keystore aliases in the configuration secret | `nil`                         |
+| `integrationServer.truststoreCertNames`  | Comma separated list of truststore aliases in the configuration secret | `nil`                       |
+| `configurationSecret`            | The name of the secret to create or to use that contains the server configuration | `nil`                    |
 | `log.format`                     | Error log format on container's console. Either `json` or `basic` | `json`                                   |
 | `metrics.enabled`                | Enable Prometheus metrics for the Queue Manager and Integration Server | `true`                              |
-| `livenessProbe.initialDelaySeconds` | The initial delay before starting the liveness probe. Useful for slower systems that take longer to start the Queue Manager |	`120` |
+| `livenessProbe.initialDelaySeconds` | The initial delay before starting the liveness probe. Useful for slower systems that take longer to start the Queue Manager |	`180` |
 | `livenessProbe.periodSeconds`    | How often to run the probe                      | `10`                                                       |
 | `livenessProbe.timeoutSeconds`   | Number of seconds after which the probe times out | `5`                                                      |
 | `livenessProbe.failureThreshold` | Minimum consecutive failures for the probe to be considered failed after having succeeded | `1`              |

@@ -16,6 +16,7 @@
 {{ $pvcName := .Values.dataPVC.name }}
 {{ $statefulSetName := include "fullname" . }}
 {{ $serverName := .Values.integrationServer.name | default .Release.Name | replace "-" "" }}
+{{ $secretName := .Values.configurationSecret | default (printf "%s-%s" $statefulSetName "configuration") }}
 apiVersion: apps/v1beta2
 kind: StatefulSet
 metadata:
@@ -118,65 +119,51 @@ spec:
               value: {{ .Values.metrics.enabled | default true | quote }}
             - name: MQSI_OVERRIDE_HOSTNAME
               value: {{ .Values.service.iP }}
-            {{- if and .Values.integrationServer.keystore .Values.integrationServer.keystore.password }}
             - name: "ACE_KEYSTORE_PASSWORD"
               valueFrom:
                  secretKeyRef:
-                   name: {{ $statefulSetName }}
+                   name: {{ $secretName }}
+                   optional: true
                    key: keystorePassword
-            {{- end }}
-            {{- if and .Values.integrationServer.truststore .Values.integrationServer.truststore.password }}
             - name: "ACE_TRUSTSTORE_PASSWORD"
               valueFrom:
                  secretKeyRef:
-                   name: {{ $statefulSetName }}
+                   name: {{ $secretName }}
+                   optional: true
                    key: truststorePassword
-            {{- end }}
             - name: MQ_ADMIN_PASSWORD
               valueFrom:
                 secretKeyRef:
-                  name: {{ $statefulSetName }}
+                  name: {{ $secretName }}
+                  optional: true
                   key: adminPassword
-            {{- if .Values.queueManager.dev.appPassword }}
             - name: MQ_APP_PASSWORD
               valueFrom:
                 secretKeyRef:
-                  name: {{ $statefulSetName }}
+                  name: {{ $secretName }}
+                  optional: true
                   key: appPassword
-            {{- end }}
           volumeMounts:
-            {{- if or .Values.integrationServer.viewerusers .Values.integrationServer.adminusers }}
             - name: webusers
               mountPath: "/home/aceuser/initial-config/webusers"
-            {{- end }}
-            {{- if .Values.queueManager.mqsc }}
             - name: mqsc
               mountPath: "/etc/mqm"
-            {{- end }}
-            {{- if and .Values.integrationServer.keystore .Values.integrationServer.keystore.password }}
+            {{- if .Values.integrationServer.keystoreKeyNames }}
             - name: keystore
               mountPath: "/home/aceuser/initial-config/keystore"
             {{- end }}
-            {{- if and .Values.integrationServer.truststore .Values.integrationServer.truststore.password }}
+            {{- if .Values.integrationServer.truststoreCertNames }}
             - name: truststore
               mountPath: "/home/aceuser/initial-config/truststore"
             {{- end }}
-            {{- if .Values.integrationServer.odbcini }}
             - name: odbcini
               mountPath: "/home/aceuser/initial-config/odbcini"
-            {{- end }}
-            {{- if .Values.integrationServer.policy }}
             - name: policy
               mountPath: "/home/aceuser/initial-config/policy"
-            {{- end }}
-            {{- if .Values.integrationServer.serverconf }}
             - name: serverconf
               mountPath: "/home/aceuser/initial-config/serverconf"
-            {{- end }}
-            {{- if .Values.integrationServer.setdbparms }}
             - name: setdbparms
               mountPath: "/home/aceuser/initial-config/setdbparms"
-            {{- end }}
             {{- if .Values.persistence.enabled }}
             - name: {{ $pvcName }}
               mountPath: "/mnt/mqm"
@@ -227,84 +214,79 @@ spec:
             requests:
 {{ toYaml .Values.acemq.resources.requests | indent 14 }}
       volumes:
-        {{- if or .Values.integrationServer.viewerusers .Values.integrationServer.adminusers }}
         - name: webusers
           secret:
             secretName: {{ $statefulSetName }}
+            optional: true
             items:
             - key: viewerusers
               path: viewer-users.txt
             - key: adminusers
               path: admin-users.txt
-        {{- end }}
-        {{- if .Values.queueManager.mqsc }}
         - name: mqsc
           secret:
-            secretName: {{ $statefulSetName }}
+            secretName: {{ $secretName }}
+            optional: true
             items:
             - key: mqsc
               path: config.mqsc
-        {{- end }}
-        {{- if and .Values.integrationServer.keystore .Values.integrationServer.keystore.password }}
+        {{- if .Values.integrationServer.keystoreKeyNames }}
+        # Marked as optional as the passphrase is not required and may not be provided
         - name: keystore
           secret:
-            secretName: {{ $statefulSetName }}
+            secretName: {{ $secretName }}
+            optional: true
             items:
-            {{- range $key, $val := .Values.integrationServer.keystore.keys }}
-            - key: keystoreKey-{{ $key }}
-              path: {{ $key }}.key
-            - key: keystoreCert-{{ $key }}
-              path: {{ $key }}.crt
-              {{- if $val.passphrase }}
-            - key: keystorePass-{{ $key }}
-              path: {{ $key }}.pass
-              {{- end }}
+            {{- range $key := splitList "," .Values.integrationServer.keystoreKeyNames }}
+            - key: keystoreKey-{{ nospace $key }}
+              path: {{ nospace $key }}.key
+            - key: keystoreCert-{{ nospace $key }}
+              path: {{ nospace $key }}.crt
+            - key: keystorePass-{{ nospace $key }}
+              path: {{ nospace $key }}.pass
             {{- end }}
         {{- end }}
-        {{- if and .Values.integrationServer.truststore .Values.integrationServer.truststore.password }}
+        {{- if .Values.integrationServer.truststoreCertNames }}
+        # Not marked as optional as the user has specified this certificate should exist in the secret
         - name: truststore
           secret:
-            secretName: {{ $statefulSetName }}
+            secretName: {{ $secretName }}
             items:
-            {{- range $key, $val := .Values.integrationServer.truststore.certs }}
-            - key: truststoreCert-{{ $key }}
-              path: {{ $key }}.crt
+            {{- range $cert := splitList "," .Values.integrationServer.truststoreCertNames }}
+            - key: truststoreCert-{{ nospace $cert }}
+              path: {{ nospace $cert }}.crt
             {{- end }}
         {{- end }}
-        {{- if .Values.integrationServer.odbcini }}
         - name: odbcini
           secret:
-            secretName: {{ $statefulSetName }}
+            secretName: {{ $secretName }}
+            optional: true
             items:
             - key: odbcini
               path: odbc.ini
-        {{- end }}
-        {{- if .Values.integrationServer.policy }}
         - name: policy
           secret:
-            secretName: {{ $statefulSetName }}
+            secretName: {{ $secretName }}
+            optional: true
             items:
             - key: policy
               path: default.policyxml
             - key: policyDescriptor
               path: policy.descriptor
-        {{- end }}
-        {{- if .Values.integrationServer.serverconf }}
         - name: serverconf
           secret:
-            secretName: {{ $statefulSetName }}
+            secretName: {{ $secretName }}
+            optional: true
             items:
             - key: serverconf
               path: server.conf.yaml
-        {{- end }}
-        {{- if .Values.integrationServer.setdbparms }}
         - name: setdbparms
           secret:
-            secretName: {{ $statefulSetName }}
+            secretName: {{ $secretName }}
+            optional: true
             items:
             - key: setdbparms
               path: setdbparms.txt
-        {{- end }}
   volumeClaimTemplates:
   {{- if .Values.persistence.enabled }}
   - metadata:
