@@ -16,61 +16,7 @@ To deploy a production IBM App Connect Enterprise integration server, [check the
 
 * Kubernetes 1.9 or greater, with beta APIs enabled
 * If persistence is enabled (see [configuration](#configuration)), then you either need to create a PersistentVolume, or specify a Storage Class if classes are defined in your cluster.
-* If you have [pod security policy control](https://kubernetes.io/docs/concepts/policy/pod-security-policy/#enabling-pod-security-policies) enabled, you must have a [PodSecurityPolicy](https://kubernetes.io/docs/concepts/policy/pod-security-policy/) that supports the following [securityContext](https://kubernetes.io/docs/concepts/policy/security-context/) settings:
-  * capabilities:
-    * CHOWN
-    * DAC_OVERRIDE
-    * FSETID
-    * FOWNER
-    * NET_RAW
-    * SETGID
-    * SETUID
-    * SETFCAP
-    * SETPCAP
-    * NET_BIND_SERVICE
-    * SYS_CHROOT
-    * KILL
-    * AUDIT_WRITE
-  * allowPrivilegeEscalation: true
-  * readOnlyRootFilesystem: false
-  * runAsNonRoot: false
-  * runAsUser: 0
-  * privileged: false
 
-* On RedHat OpenShift a [Security Context Constraint](https://blog.openshift.com/understanding-service-accounts-sccs/) should be used in place of a pod security policy. The recommended Security Context Constraint is shown below:
-```
-kind: SecurityContextConstraints
-apiVersion: v1
-metadata:
-  name: ibm-ace-scc
-allowPrivilegedContainer: true
-runAsUser:
-  type: RunAsAny
-seLinuxContext:
-  type: RunAsAny
-fsGroup:
-  type: RunAsAny
-supplementalGroups:
-  type: RunAsAny
-requiredDropCapabilities:
-- MKNOD
-allowedCapabilities:
-- SETPCAP
-- AUDIT_WRITE
-- CHOWN
-- NET_RAW
-- DAC_OVERRIDE
-- FOWNER
-- FSETID
-- KILL
-- SETUID
-- SETGID
-- NET_BIND_SERVICE
-- SYS_CHROOT
-- SETFCAP  
-forbiddenSysctls:
-- '*'    
-```
 * **Note**: If you are deploying to an IBM Cloud Private environment that does not support these security settings by default. Follow these [instructions](https://www.ibm.com/support/knowledgecenter/SSBS6K_3.1.0/app_center/nd_helm.html) to enable your deployment.
 
 * If you are using SELinux you must meet the [MQ requirements](https://www-01.ibm.com/support/docview.wss?uid=swg21714191)
@@ -138,6 +84,77 @@ The following table describes the secret keys:
 | `viewerusers`                   | Multi-line value containing the `{UserName} {Password}` to pass to [mqsiwebuseradmin command](https://www.ibm.com/support/knowledgecenter/en/SSTTDS_11.0.0/com.ibm.etools.mft.doc/bn28490_.htm) to create admin users with READ access to the server |
 
 Further instructions and helper scripts are provided in the `scripts` directory.
+
+### PodSecurityPolicy Requirements
+
+This chart requires a PodSecurityPolicy to be bound to the target namespace prior to installation.  Choose either a predefined PodSecurityPolicy or have your cluster administrator create a custom PodSecurityPolicy for you:
+* ICPv3.1 - Predefined  PodSecurityPolicy name: [`privileged`](https://www.ibm.com/support/knowledgecenter/en/SSBS6K_3.1.0/manage_cluster/enable_pod_security.html)
+* ICPv3.1.1 - Predefined PodSecurityPolicy name: [`ibm-anyuid-psp`](https://ibm.biz/cpkspec-psp)
+* Custom PodSecurityPolicy definition:
+
+```
+apiVersion: extensions/v1beta1
+kind: PodSecurityPolicy
+metadata:
+  name: ibm-ace-psp
+spec:
+  allowPrivilegeEscalation: true
+  fsGroup:
+    rule: RunAsAny
+  requiredDropCapabilities:
+  - MKNOD
+  allowedCapabilities:
+  - SETPCAP
+  - AUDIT_WRITE
+  - CHOWN
+  - NET_RAW
+  - DAC_OVERRIDE
+  - FOWNER
+  - FSETID
+  - KILL
+  - SETUID
+  - SETGID
+  - NET_BIND_SERVICE
+  - SYS_CHROOT
+  - SETFCAP
+  runAsUser:
+    rule: RunAsAny
+  seLinux:
+    rule: RunAsAny
+  supplementalGroups:
+    rule: RunAsAny
+  volumes:
+  - configMap
+  - emptyDir
+  - projected
+  - secret
+  - persistentVolumeClaim
+  forbiddenSysctls:
+  - '*'
+```
+
+### Red Hat OpenShift SecurityContextConstraints Requirements
+
+This chart requires a SecurityContextConstraints to be bound to the target namespace prior to installation. To meet this requirement there may be cluster scoped as well as namespace scoped pre and post actions that need to occur.
+
+
+#### Running an ACE Only Integration Server
+
+The predefined SecurityContextConstraints name: [`ibm-anyuid-scc`](https://ibm.biz/cpkspec-scc) has been verified for this chart when creating an ACE & MQ integration server, if your target namespace is bound to this SecurityContextConstraints resource you can proceed to install the chart.
+
+Run the following command to add the service account of the Integration server to the anyuid scc - `oc adm policy add-scc-to-user ibm-anyuid-scc system:serviceaccount:<namespace>:<releaseName>-ibm-ace-server-rhel-prod-serviceaccount` i.e.
+``` 
+oc adm policy add-scc-to-user ibm-anyuid-scc system:serviceaccount:default:ace-nomq-ibm-ace-server-rhel-prod-serviceaccount
+```
+
+#### Running an ACE & MQ Integration Server
+
+The predefined SecurityContextConstraints name: [`ibm-privileged-scc`](https://ibm.biz/cpkspec-scc) has been verified for this chart when creating an ACE & MQ integration server, if your target namespace is bound to this SecurityContextConstraints resource you can proceed to install the chart.
+
+Run the following command to add the service account of the Integration server to the privileged scc. - `oc adm policy add-scc-to-user ibm-privileged-scc system:serviceaccount:<namespace>:<releaseName>-ibm-ace-server-rhel-prod-serviceaccount` i.e.
+```
+oc adm policy add-scc-to-user ibm-privileged-scc system:serviceaccount:default:ace-mq-ibm-ace-server-rhel-prod-serviceaccount
+```
 
 ## Resources Required
 
