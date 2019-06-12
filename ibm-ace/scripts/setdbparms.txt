@@ -1,0 +1,2 @@
+# resource user password
+DB2DB ace ace
