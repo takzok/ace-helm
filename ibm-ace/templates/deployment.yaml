@@ -16,6 +16,7 @@
 {{ $deploymentName := include "fullname" . }}
 {{ $serverName := .Values.integrationServer.name | default .Release.Name | replace "-" "" }}
 {{ $secretName := .Values.configurationSecret | default (printf "%s-%s" $deploymentName "configuration") }}
+{{ $dbconnSecretName := .Values.databaseConnectionSecret | default (printf "%s-%s" $deploymentName "dbconnection") }}
 apiVersion: extensions/v1beta1
 kind: Deployment
 metadata:
@@ -110,16 +111,16 @@ spec:
               value: {{ .Values.service.iP }}
             - name: "ACE_KEYSTORE_PASSWORD"
               valueFrom:
-                 secretKeyRef:
-                   name: {{ $secretName }}
-                   optional: true
-                   key: keystorePassword
+                secretKeyRef:
+                  name: {{ $secretName }}
+                  optional: true
+                  key: keystorePassword
             - name: "ACE_TRUSTSTORE_PASSWORD"
               valueFrom:
-                 secretKeyRef:
-                   name: {{ $secretName }}
-                   optional: true
-                   key: truststorePassword
+                secretKeyRef:
+                  name: {{ $secretName }}
+                  optional: true
+                  key: truststorePassword
           volumeMounts:
             - name: webusers
               mountPath: "/home/aceuser/initial-config/webusers"
@@ -139,6 +140,8 @@ spec:
               mountPath: "/home/aceuser/initial-config/serverconf"
             - name: setdbparms
               mountPath: "/home/aceuser/initial-config/setdbparms"
+            - name: db2dsdriver
+              mountPath: "/home/aceuser/initial-config/db2dsdriver"
           securityContext:
             allowPrivilegeEscalation: false
             readOnlyRootFilesystem: false
@@ -250,4 +253,11 @@ spec:
             items:
             - key: setdbparms
               path: setdbparms.txt
+        - name: db2dsdriver
+          secret:
+            secretName: {{ $secretName }}
+            optional: true
+            items:
+            - key: db2dsdriver
+              path: db2dsdriver.cfg
 {{- end }}
