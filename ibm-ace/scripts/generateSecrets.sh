@@ -99,6 +99,9 @@ if [ -s ./setdbparms.txt ]; then
   SECRET_ARGS="${SECRET_ARGS} --from-file=setdbparms=./setdbparms.txt "
 fi
 
+if [ -s ./db2dsdriver.cfg ]; then
+  SECRET_ARGS="${SECRET_ARGS} --from-file=db2dsdriver=./db2dsdriver.cfg "
+fi
 # Create the Kubernetes secret resource
 echo "Creating configuration secret"
 echo "kubectl create secret generic ${TARGET_SECRET_NAME}${SECRET_ARGS}"
